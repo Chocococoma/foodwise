@@ -3,11 +3,53 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hive/hive.dart';
+//import 'package:hive/hive.dart';
 import 'package:FoodWise/models/product.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart';
+import 'package:FoodWise/screens/products_screen.dart';
+import 'package:flutter/material.dart';
 
 
+
+DateTime dateTime = DateTime.now();
+TZDateTime tzDateTime = TZDateTime.utc(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.millisecond);
+Location location = getLocation('Europe/London');
+
+
+//TODO works not everywhere
 class ProductData extends ChangeNotifier {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  Future<void> scheduleExpiryNotification(
+      int id,
+      DateTime expirationDate,
+      ) async {
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const android = AndroidNotificationDetails(
+      'expiry_channel',
+      'Expiry notifications',
+      'Notifications for expiring products',
+      importance: Importance.high,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const iOS = IOSNotificationDetails();
+    const notificationDetails = NotificationDetails(android: android, iOS: iOS);
+
+    final timeUntilExpiry = expirationDate.difference(DateTime.now());
+    if (timeUntilExpiry.inDays < 2 && timeUntilExpiry.inDays >= 0) {
+      await flutterLocalNotificationsPlugin.show(
+        0,
+        'Product $id is expiring soon',
+        'The expiry date is ${expirationDate.toIso8601String()}',
+        notificationDetails,
+      );
+    }
+  }
+
+
   List<Product> _products = [];
 
   UnmodifiableListView<Product> get products {
@@ -39,8 +81,7 @@ class ProductData extends ChangeNotifier {
 
   void addProduct(Product product) {
     _products.add(product);
-    _nextProductId++; // increment the ID for the next product
-    _saveProducts();
+    _saveProduct(product);
     notifyListeners();
   }
 
@@ -100,6 +141,9 @@ Future<void> saveProduct(String scannedData, String productName, DateTime expira
 }
 
 Future<void> _saveProduct(Product product) async {
-  final box = await Hive.openBox<Product>('productsBox');
-  await box.put(product.id, product);
+  final prefs = await SharedPreferences.getInstance();
+  final productsJson = prefs.getString('products');
+  List<dynamic> productsList = productsJson != null ? jsonDecode(productsJson) : [];
+  productsList.add(product.toJson());
+  prefs.setString('products', jsonEncode(productsList));
 }
