@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:foodwise/widgets/product_tile.dart';
+import 'package:FoodWise/widgets/product_tile.dart';
 import 'package:provider/provider.dart';
-import 'package:foodwise/models/product_data.dart';
+import 'package:FoodWise/models/product_data.dart';
 
 class ProductsList extends StatelessWidget {
   @override

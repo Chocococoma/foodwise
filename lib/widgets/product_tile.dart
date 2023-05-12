@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:foodwise/models/product.dart';
-import 'package:foodwise/models/product_data.dart';
+import 'package:FoodWise/models/product.dart';
+import 'package:FoodWise/models/product_data.dart';
 import 'package:provider/provider.dart';
 
 
@@ -48,11 +48,12 @@ class ProductTile extends StatelessWidget {
       onLongPress: () {
         showDialog(
           context: context,
-          builder: (BuildContext context) {
-            TextEditingController nameController =
-            TextEditingController(text: product.name);
-            TextEditingController dateController = TextEditingController(
-                text: DateFormat.yMd().format(product.expirationDate));
+          builder: (context) {
+            final nameController = TextEditingController(text: product.name);
+            final dateController = TextEditingController(
+                text: product.expirationDate != null
+                    ? DateFormat.yMd().format(product.expirationDate!)
+                    : '');
 
             return AlertDialog(
               title: Text('Edit Product'),
@@ -61,67 +62,59 @@ class ProductTile extends StatelessWidget {
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: InputDecoration(labelText: 'Product Name'),
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      hintText: 'Enter product name',
+                    ),
                   ),
                   TextField(
                     controller: dateController,
-                    decoration: InputDecoration(labelText: 'Expiration Date'),
+                    decoration: InputDecoration(
+                      labelText: 'Expiration Date',
+                      hintText: 'Enter expiration date',
+                    ),
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: product.expirationDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100));
+                      if (pickedDate != null) {
+                        dateController.text = DateFormat.yMd().format(pickedDate);
+                      }
+                    },
                   ),
                 ],
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('CANCEL'),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(Icons.clear),
                 ),
-                ElevatedButton(
+                IconButton(
                   onPressed: () {
-                    String name = nameController.text;
-                    DateTime date =
-                    DateFormat.yMd().parse(dateController.text);
                     Provider.of<ProductData>(context, listen: false)
-                        .updateProductById(product.id, name, date);
+                        .deleteProductById(product.id);
                     Navigator.of(context).pop();
                   },
-                  child: Text('SAVE'),
+                  icon: Icon(Icons.delete, color: Colors.red),
                 ),
-                TextButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Delete Product'),
-                          content: Text('Are you sure you want to delete "${product.name}"?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Text('CANCEL'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Provider.of<ProductData>(context, listen: false)
-                                    .deleteProductById(product.id);
-                                Navigator.of(context).popUntil((route) => route.isFirst);
-                              },
-                              child: Text('DELETE'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                IconButton(
+                  onPressed: () async {
+                    String name = nameController.text;
+                    DateTime? date;
+                    if (dateController.text.isNotEmpty) {
+                      date = DateFormat.yMd().parse(dateController.text);
+                    }
+                    Provider.of<ProductData>(context, listen: false)
+                        .updateProductById(product.id, name, date ?? DateTime.now());
+                    Navigator.of(context).pop();
                   },
-                  child: Text(
-                    'DELETE',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  icon: Icon(Icons.check, color: Colors.green),
                 ),
               ],
             );
+
           },
         );
       },

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:foodwise/models/product_data.dart';
+import 'package:FoodWise/models/product.dart';
+import 'package:FoodWise/models/product_data.dart';
 
 class AddProductScreen extends StatefulWidget {
   @override
-  _AddProductScreenState createState() => _AddProductScreenState();
+  AddProductScreenState createState() => AddProductScreenState();
 }
 
-class _AddProductScreenState extends State<AddProductScreen> {
+class AddProductScreenState extends State<AddProductScreen> {
   late String newProductTitle;
-  late DateTime? expirationDate = DateTime.now(); // or null
+  DateTime? expirationDate = DateTime.now(); // or null
+  bool isFromQRScan = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +49,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: Colors.lightBlueAccent,
+                backgroundColor: Color(0xFFB6EBD0),
                 elevation: 5.0,
               ),
               child: Text(
@@ -58,14 +60,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
               onPressed: () {
-                if (expirationDate != null) {
+                if (newProductTitle.isNotEmpty) {
+                  final newProduct = Product(
+                    name: newProductTitle,
+                    expirationDate: expirationDate ?? DateTime.now(),
+                    isDone: isFromQRScan,
+                  );
                   Provider.of<ProductData>(context, listen: false)
-                      .addProduct(newProductTitle, expirationDate!);
-                } else {
-                  Provider.of<ProductData>(context, listen: false)
-                      .addProduct(newProductTitle, DateTime.now());
+                      .addProduct(newProduct);
+                  Navigator.pop(context);
                 }
-                Navigator.pop(context);
               },
             ),
             SizedBox(
@@ -85,7 +89,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   child: Text(
                     expirationDate == null
                         ? 'Choose Date'
-                        : '${expirationDate?.year}-${expirationDate?.month}-${expirationDate?.day}',
+                        : '${expirationDate!.year}-${expirationDate!.month}-${expirationDate!.day}',
                     style: TextStyle(
                       fontSize: 20.0,
                       color: Colors.lightBlueAccent,
@@ -97,9 +101,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
                         lastDate: DateTime(2100));
-                    setState(() {
-                      expirationDate = pickedDate;
-                    });
+                    if (pickedDate != null) {
+                      setState(() {
+                        expirationDate = pickedDate;
+                      });
+                    }
                   },
                 ),
               ],
